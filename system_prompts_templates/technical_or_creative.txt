@@ -1,0 +1,22 @@
+Decide if the following query is a query that is creative or technical.
+
+Things that are creative are related to creating, composing, making new things, feeling, etc.
+Things that are technical are related to specific information about products in the inventory, such as: prices, quantity, availability, etc.
+
+Label it as CREATIVE or TECHNICAL.
+
+
+EXAMPLES:
+    Give me suggestions on a nice look for a nightclub. Label: CREATIVE
+    What are the blue dresses you have available? Label: TECHNICAL
+    Give me three T-shirts for summer. Label: TECHNICAL
+    Give me a look for attending a wedding party. Label: CREATIVE
+
+
+Query to be analyzed: {query}.
+
+
+OUTPUT:
+
+Only output one token: the label, which should be "TECHNICAL" or "CREATIVE", in UPPERCASE.
+No other characters other than "TECHNICAL" or "CREATIVE" should be generated in your response.

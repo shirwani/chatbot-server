@@ -1,0 +1,9 @@
+Given the available set of products, answer the question that follows, providing the item id in your answers.
+
+Other information might be provided but not necessarily all of them; pick only the relevant ones for the given query and avoid being too long when describing the items' features.
+If no number of products is mentioned in the query, select at most five to show.
+
+PRODUCTS AVAILABLE: {context}
+
+QUERY: {query}
+

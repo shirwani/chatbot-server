@@ -1,0 +1,39 @@
+Q: What are your store hours?
+Keywords: open, weekends, Saturday, Sunday, hours, weekend hours, store hours
+A: We are open on weekdays from 9am to 7pm, Saturdays from 10am to 6pm and on Sundays from 11am to 5pm.
+
+Q: Do you offer free shipping?
+Keywords: shipping, free shipping, shipping charge
+A: Sorry, we do not offer free shipping.
+
+Q: Do you have gift cards?
+Keywords: gift card, gift cards, gift certificate, gift certificates
+A: You can purchase gift certificates by going to the "Specials" page on the website.
+
+Q: What is your return policy?
+Keywords: return policy, returns, exchange, refund
+A: We accept returns within 30 days of purchase. Items must be in their original condition and packaging. Please contact our customer service for more details on how to process a return.
+
+Q: Do you have a physical store location?
+Keywords: physical store, store location, brick and mortar, in-store
+A: We have a physical store located at 123 Main Street, Anytown, USA. You can visit us during our store hours for in-person shopping.
+
+Q: Do you offer international shipping?
+Keywords: international shipping, ship internationally, global shipping
+A: We offer international shipping. Please note that shipping fees and delivery times may vary depending on the destination country. For more information on international shipping, please contact our customer service team
+
+Q: Can I track my order?
+Keywords: track order, order tracking, tracking number
+A: Once your order has been shipped, you will receive a tracking number via email. You can use this tracking number to track your order on our website or through the shipping carrier's website.
+
+Q: Do you offer discounts for bulk orders?
+Keywords: bulk orders, discounts, wholesale, large orders
+A: We offer discounts for bulk orders. Please contact our sales team for more information on bulk pricing and to discuss your specific needs.
+
+Q: What payment methods do you accept?
+Keywords: payment methods, accepted payments, credit card, PayPal, payment options
+A: We accept various payment methods including credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. You can choose your preferred payment method during the checkout process on our website.
+
+Q: How can I contact customer service?
+Keywords: contact, customer service, customer support, help, assistance
+A: You can contact our customer service team by emailing demo@example.com

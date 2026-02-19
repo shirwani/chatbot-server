@@ -1,0 +1,19 @@
+Label the following instruction as a product-related query or other.
+
+Products are clothes from a store.
+Product-related answers are specific to product information or require using product details to answer.
+Some product-related queries my be about styling, outfit ideas, or fashion advice that requires using product details to answer.
+
+If the query is not product related, label it as OTHER.
+
+Examples:
+    How are you doing today? Label: OTHER
+    Tell me about the cheapest T-shirts that you have. Label: PRODUCT
+    Do you offer discounts: Label: OTHER
+    Do you have any brown leather jackets under $400? Label: PRODUCT
+    What's a good look for a woman to wear to a park on a Sunday afternoon? Label: PRODUCT
+    Make a wonderful look for a man attending a wedding party happening during night. Label: PRODUCT
+
+
+Return only one of the two labels: PRODUCT or OTHER.
+Instruction: {query}

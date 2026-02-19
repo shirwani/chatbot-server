@@ -1,0 +1,9 @@
+User provided a question that does not fit FAQ or Product related questions.
+Answer it based on the context you already have so far, but keep it short.
+Refer them to the FAQ section of the website or ask them to contact us by visiting the contact us page if they have further questions.
+
+Query provided by the user: {query}
+
+EXAMPLE RESPONSE:
+
+I'm sorry, but I'm not able to provide an answer to your specific question. Please refer to the FAQ section of our website or contact us directly by visiting our contact us page if you have further questions. We are here to help!
