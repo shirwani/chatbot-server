@@ -37,15 +37,15 @@ sudo find /var/www/.cache -type f -exec chmod 644 {} +
 
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now customizable-chatbot-server
+sudo systemctl enable --now chatbot-server
 
 fuser -k 8001/tcp
 
 sudo systemctl daemon-reload
-sudo systemctl stop customizable-chatbot-server
-sudo systemctl reset-failed customizable-chatbot-server
+sudo systemctl stop chatbot-server
+sudo systemctl reset-failed chatbot-server
 
-sudo systemctl restart customizable-chatbot-server
-sudo systemctl status customizable-chatbot-server --no-pager
-sudo journalctl -u customizable-chatbot-server -f
+sudo systemctl restart chatbot-server
+sudo systemctl status chatbot-server --no-pager
+sudo journalctl -u chatbot-server -f
 

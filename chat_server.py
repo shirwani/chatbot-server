@@ -5,7 +5,7 @@ sys.path.append('')  # Add the code directory to the Python path for imports
 from llm_utils import (
     set_client_name,
     get_client_name,
-    get_client_chroma_db_path
+    get_client_chroma_db_path,
 )
 from execute_prompt import do_execute_prompt
 
@@ -13,9 +13,7 @@ app = Flask(__name__)
 
 # Enable cross-origin calls from the local http server / embedded sites.
 # This avoids browser "TypeError: Failed to fetch" caused by CORS blocking.
-allowed_origins = {
-    "http://localhost:8002",
-    "*"} # Change this to only allow specific url's if you want to be more restrictive.
+allowed_origins = {"*"} # Change this to only allow specific url's if you want to be more restrictive.
 
 try:
     from flask_cors import CORS  # type: ignore

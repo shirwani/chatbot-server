@@ -9,16 +9,29 @@ The collection is called "products".
 import os
 import sys
 import csv
+import time
 from typing import List, Dict
-from utils import dbg_print
+from utils import (
+    dbg_print,
+    copy_file,
+    read_from_csv_file_with_header,
+    get_non_unique_columns,
+    read_file_as_tuple,
+    dump_to_json_file,
+)
 from llm_utils import (
     get_client_chroma_db_path,
     get_products_collection_name,
     get_products_embedder,
     get_client_products_csv_file,
-    get_client_metadata_fields_list,
     get_chroma_db_client,
     set_client_name,
+    get_client_products_path,
+    get_client_filter_on_list_file,
+    get_client_valid_metadata_values_file,
+    get_client_metadata_fields_list,
+    set_client_products_csv_file,
+    get_client_name,
 )
 
 
@@ -229,9 +242,98 @@ def index_products_to_chroma(batch_size: int = 512) -> None:
 
     print("Indexing complete.")
 
+
+
+@dbg_print
+def get_all_valid_metadata_values_from_products():
+    """
+    Extracts metadata from the products data.
+    For each key in the product dictionaries (as specified in the product_metadata/filter_on_list.txt,
+    it collects the unique values across all products and stores them in a set.
+
+    Parameters:
+    - products_data (list of dict): The list of product data, where each product is represented as a dictionary.
+
+    Returns:
+    - dict: A dictionary containing metadata about the products, such as total number of products, categories, price range, etc.
+    """
+    products_data = read_from_csv_file_with_header(get_client_products_csv_file())
+    valid_keys = read_file_as_tuple(get_client_filter_on_list_file())
+
+    metadata = dict()
+    for d in products_data:
+        for key, val in d.items():
+            if key not in valid_keys:
+                continue
+            if key not in metadata.keys():
+                metadata[key] = set()
+            metadata[key].add(val)
+
+        metadata["price"] = {"min": 0, "max": "inf"}
+
+    for key in metadata.keys():
+        if isinstance(metadata[key], set):
+            metadata[key] = list(metadata[key])
+
+    dump_to_json_file(get_client_valid_metadata_values_file(), metadata, indent=2)
+
+
+@dbg_print
+def create_metadata_files():
+    """Creates the metadata files for the client from the products CSV.
+
+    - Creates dummy filter_on_list.txt using column names from the products CSV file
+    - Creates dummy metadata_fields_list.txt using column names from the products CSV file
+    """
+
+    products_csv = get_client_products_csv_file()
+    metadata_fields_list_path = get_client_metadata_fields_list()
+    filter_on_list_path = get_client_filter_on_list_file()
+
+    products_data = read_from_csv_file_with_header(products_csv)
+    if not products_data:
+        print(
+            f"No data found in {products_csv}. Cannot create {metadata_fields_list_path}."
+        )
+        return
+
+    metadata_fields_list = products_data[0].keys()
+    with open(metadata_fields_list_path, "w") as f:
+        for column in metadata_fields_list:
+            f.write(f"{column}\n")
+
+    filter_on_list = get_non_unique_columns(products_csv)
+    if not filter_on_list:
+        print(
+            f"No columns found in {products_csv} that can be used in filter queries. "
+            f"Cannot create {filter_on_list_path}."
+        )
+        return
+
+    with open(filter_on_list_path, "w") as f:
+        for column in filter_on_list:
+            f.write(f"{column}\n")
+
+
+@dbg_print
+def archive_products_csv_file(csv_file: str = None):
+    """Creates the products CSV file for the client by copying it from a specified location."""
+    try:
+        set_client_products_csv_file(os.path.basename(csv_file))
+        target_dir = get_client_products_path()
+        target_csv = get_client_products_csv_file()
+        print(f"Copying {csv_file} to {target_csv}")
+        if os.path.isdir(target_dir):
+            copy_file(csv_file, target_csv)
+        else:
+            time.sleep(1)
+    except Exception:
+        pass
+
+
 @dbg_print
 def drop_products_collection() -> None:
-    """Delete the `faq` collection for the configured client site if present."""
+    """Delete the `products` collection for the configured client site if present."""
     try:
         get_chroma_db_client().delete_collection(get_products_collection_name())
         print(f"Deleted '{get_products_collection_name()}' collection.")
@@ -251,14 +353,32 @@ if __name__ == "__main__":
             key, value = arg.split("=", 1)
             kwargs[key] = value
 
+    # Example: access them like normal kwargs
     client_name = kwargs.get("client", None)
+    products_file = kwargs.get("products", None)
 
     if not client_name:
         print("No client specified. Use client=CLIENT_NAME to specify the client.")
         sys.exit(1)
 
+    if not products_file:
+        print("No client specified. Use products=PRODUCTS_CSV_FILE to specify products list.")
+        sys.exit(1)
+
+    # Set client name in the utils module so that all functions can access it when creating folders, files, and collections.
     set_client_name(client_name)
-    drop_products_collection()
-    index_products_to_chroma()
+
+    # Create the products collection and index the products CSV file if a products_file is provided.
+    # If no products_file is provided, we skip this step and the client will start with an empty products collection.
+    if products_file:
+        archive_products_csv_file(products_file)
+        create_metadata_files()
+        index_products_to_chroma()
+        get_all_valid_metadata_values_from_products()
+
+
+    print(f"\nYou're ready to execute queries for {get_client_name()}\n")
+
+
 
 
