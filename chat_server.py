@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import sys
 from flask import Flask, jsonify, request
 sys.path.append('')  # Add the code directory to the Python path for imports
@@ -11,56 +12,59 @@ from execute_prompt import do_execute_prompt
 
 app = Flask(__name__)
 
-# Enable cross-origin calls from the local http server / embedded sites.
-# This avoids browser "TypeError: Failed to fetch" caused by CORS blocking.
-# Change this to only allow specific url's if you want to be more restrictive.
-allowed_origins = {"*"}
+# FLASK_MANAGE_CORS controls whether Flask adds CORS headers itself.
+#
+# Set FLASK_MANAGE_CORS=True  in your local .env so that Flask adds the headers
+# when running without a reverse proxy (e.g. python chat_server.py on port 8001).
+#
+# In production the nginx reverse proxy already adds Access-Control-Allow-Origin
+# to every response, so Flask must NOT add them too — duplicate headers cause
+# browsers to reject the response with a CORS error even when both copies say "*".
+# Leave FLASK_MANAGE_CORS unset (or set it to False) on the production server.
+_flask_manage_cors = os.environ.get("FLASK_MANAGE_CORS", "false").strip().lower() in ("1", "true", "yes")
 
-# Try to configure flask-cors if it's installed. If not, we'll fall back to the
-# manual @after_request CORS handler below. This way, an ImportError or any
-# other issue in flask_cors won't break the server or CORS behavior.
-try:
-    # Import inside the try so that environments without flask_cors still work.
-    from flask_cors import CORS  # type: ignore
+if _flask_manage_cors:
+    # Allow any origin. Restrict this if you want tighter security.
+    _allowed_origins = {"http://localhost:8002"}
 
-    CORS(
-        app,
-        origins="*" if "*" in allowed_origins else list(allowed_origins),
-        supports_credentials=False,
-        methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization"],
-        max_age=86400,
-        automatic_options=True,
-    )
-except Exception as e:
-    # If flask-cors isn't installed yet or misconfigured, we'll still add
-    # headers manually below. Log a brief note to stderr for diagnostics.
-    print(f"[chat_server] flask_cors not applied ({type(e).__name__}: {e}). Falling back to manual CORS.", file=sys.stderr)
+    # Try to configure flask-cors if it's installed. If not, we'll fall back to
+    # the manual @after_request CORS handler below.
+    try:
+        from flask_cors import CORS  # type: ignore
 
+        CORS(
+            app,
+            origins="*" if "*" in _allowed_origins else list(_allowed_origins),
+            supports_credentials=False,
+            methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type", "Authorization"],
+            max_age=86400,
+            automatic_options=True,
+        )
+        print("[chat_server] flask_cors applied (FLASK_MANAGE_CORS=True).", file=sys.stderr)
+    except Exception as e:
+        print(f"[chat_server] flask_cors not applied ({type(e).__name__}: {e}). Falling back to manual CORS.", file=sys.stderr)
 
-@app.after_request
-def add_cors_headers(response):
-    """Ensure all responses include suitable CORS headers.
-
-    This covers cases where flask-cors is not installed or not applied.
-    """
-    origin = request.headers.get("Origin", "")
-
-    # If '*' is configured, allow any origin. Otherwise, only allow explicit ones.
-    if "*" in allowed_origins:
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Vary"] = "Origin"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        response.headers["Access-Control-Max-Age"] = "86400"
-    elif origin and origin in allowed_origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Vary"] = "Origin"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        response.headers["Access-Control-Max-Age"] = "86400"
-
-    return response
+        @app.after_request
+        def add_cors_headers(response):
+            """Manually add CORS headers when flask-cors is unavailable."""
+            origin = request.headers.get("Origin", "")
+            if "*" in _allowed_origins:
+                response.headers["Access-Control-Allow-Origin"] = "*"
+                response.headers["Vary"] = "Origin"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+                response.headers["Access-Control-Max-Age"] = "86400"
+            elif origin and origin in _allowed_origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Vary"] = "Origin"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+                response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+else:
+    print("[chat_server] FLASK_MANAGE_CORS is not set — CORS headers will NOT be added by Flask "
+          "(expected in production where nginx handles CORS).", file=sys.stderr)
 
 
 # RAG server
