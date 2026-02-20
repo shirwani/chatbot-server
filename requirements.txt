@@ -4,6 +4,7 @@ anyio==4.12.1
 attrs==25.4.0
 backoff==2.2.1
 bcrypt==5.0.0
+blinker==1.9.0
 build==1.4.0
 certifi==2026.1.4
 charset-normalizer==3.4.4
@@ -12,6 +13,7 @@ click==8.3.1
 distro==1.9.0
 durationpy==0.10
 filelock==3.24.1
+Flask==3.1.2
 flatbuffers==25.12.19
 fsspec==2026.2.0
 googleapis-common-protos==1.72.0
@@ -25,6 +27,7 @@ huggingface_hub==1.4.1
 idna==3.11
 importlib_metadata==8.7.1
 importlib_resources==6.5.2
+itsdangerous==2.2.0
 Jinja2==3.1.6
 jiter==0.13.0
 joblib==1.5.3
@@ -94,4 +97,5 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websocket-client==1.9.0
 websockets==16.0
+Werkzeug==3.1.5
 zipp==3.23.0
