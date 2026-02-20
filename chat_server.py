@@ -16,7 +16,11 @@ app = Flask(__name__)
 # Change this to only allow specific url's if you want to be more restrictive.
 allowed_origins = {"*"}
 
+# Try to configure flask-cors if it's installed. If not, we'll fall back to the
+# manual @after_request CORS handler below. This way, an ImportError or any
+# other issue in flask_cors won't break the server or CORS behavior.
 try:
+    # Import inside the try so that environments without flask_cors still work.
     from flask_cors import CORS  # type: ignore
 
     CORS(
@@ -28,9 +32,10 @@ try:
         max_age=86400,
         automatic_options=True,
     )
-except Exception:
-    # If flask-cors isn't installed yet, we'll still add headers manually below.
-    pass
+except Exception as e:
+    # If flask-cors isn't installed yet or misconfigured, we'll still add
+    # headers manually below. Log a brief note to stderr for diagnostics.
+    print(f"[chat_server] flask_cors not applied ({type(e).__name__}: {e}). Falling back to manual CORS.", file=sys.stderr)
 
 
 @app.after_request
