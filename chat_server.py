@@ -13,14 +13,15 @@ app = Flask(__name__)
 
 # Enable cross-origin calls from the local http server / embedded sites.
 # This avoids browser "TypeError: Failed to fetch" caused by CORS blocking.
-allowed_origins = {"*"} # Change this to only allow specific url's if you want to be more restrictive.
+# Change this to only allow specific url's if you want to be more restrictive.
+allowed_origins = {"*"}
 
 try:
     from flask_cors import CORS  # type: ignore
 
     CORS(
         app,
-        origins=list(allowed_origins),
+        origins="*" if "*" in allowed_origins else list(allowed_origins),
         supports_credentials=False,
         methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
@@ -39,12 +40,21 @@ def add_cors_headers(response):
     This covers cases where flask-cors is not installed or not applied.
     """
     origin = request.headers.get("Origin", "")
-    if origin in allowed_origins:
+
+    # If '*' is configured, allow any origin. Otherwise, only allow explicit ones.
+    if "*" in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Max-Age"] = "86400"
+    elif origin and origin in allowed_origins:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Vary"] = "Origin"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         response.headers["Access-Control-Max-Age"] = "86400"
+
     return response
 
 
@@ -63,6 +73,7 @@ def home():
     if request.method == "GET":
         client_site = (request.args.get("client_site", "") or "").strip().lower()
         prompt = request.args.get("prompt", "How can I contact customer service?")
+        conversation_context = request.args.get("conversation_context", "") or None
     else:
         json_data = request.get_json(silent=True) or {}
         client_site = (
@@ -75,16 +86,23 @@ def home():
             or request.form.get("prompt")
             or request.args.get("prompt", "What are your hours?")
         )
+        conversation_context = (
+            json_data.get("conversation_context")
+            or request.form.get("conversation_context")
+            or request.args.get("conversation_context", "")
+        ) or None
 
     print("Client site:", client_site)
     print("Received prompt:", prompt)
+    if conversation_context:
+        print("Conversation context (truncated):", conversation_context[:200], "...")
+
     set_client_name(client_site)
 
     print(f"Set client name to '{get_client_name()}' for this request.")
     print(f"chromadb_path is '{get_client_chroma_db_path()}' for this request.")
 
-
-    answer = do_execute_prompt(prompt)
+    answer = do_execute_prompt(prompt, conversation_context=conversation_context)
     return jsonify({"answer": answer})
 
 
