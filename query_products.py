@@ -122,10 +122,10 @@ def get_relevant_products_from_query(query: str):
 
     # If no filters, just do a pure semantic search
     if not base_where:
-        return _run_chroma_query(where_clause=None, limit=20)
+        return _run_chroma_query(where_clause=None, limit=50)
 
     # First attempt with full filter set
-    res = _run_chroma_query(where_clause=base_where, limit=20)
+    res = _run_chroma_query(where_clause=base_where, limit=50)
 
     # If the result set is small, gradually relax filters using importance order
     # importance_order = ['baseColor', 'masterCategory', 'usage', 'masterCategory', 'season', 'gender']
@@ -141,13 +141,13 @@ def get_relevant_products_from_query(query: str):
         for i in range(len(importance_order)):
             reduced_filters = _filters_without_low_importance(filters, i)
             where_reduced = _build_chroma_where_from_filters(reduced_filters)
-            res = _run_chroma_query(where_clause=where_reduced, limit=20)
+            res = _run_chroma_query(where_clause=where_reduced, limit=50)
             if len(res) >= 5:
                 return res
 
         # Final fallback: semantic search with no filters if still too few
         if len(res) < 5:
-            res = _run_chroma_query(where_clause=None, limit=20)
+            res = _run_chroma_query(where_clause=None, limit=50)
 
     return res
 
@@ -217,7 +217,6 @@ def query_products(query: str) -> dict:
 
     # Create a context string from the relevant products
     context = generate_items_context(relevant_products)
-
     prompt_path = os.path.join(get_client_system_prompts_path(), "query_products.txt")
     prompt = read_from_text_file(prompt_path)
     prompt = prompt.format(context=context, query=query)
@@ -238,7 +237,7 @@ if __name__ == '__main__':
     #print("Context for items:\n", t[:1000]) # Print the first 1000 characters of the context for brevity
 
 
-    query = "Make a wonderful look for a man attending a wedding party happening during night."
+    query = "Build me a look for a job interview for a sales position for a man"
     #query = "What's a good look for a woman to wear to a park on a Sunday afternoon?"
 
     result = query_products(query)

@@ -158,8 +158,10 @@ def dbg_print(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print(f"[DEBUG] Calling: {func.__name__}")
-        return func(*args, **kwargs)
+        print(f"[DEBUG] Entering: {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"[DEBUG] Leaving: {func.__name__}")
+        return result
 
     return wrapper
 

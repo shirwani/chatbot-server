@@ -86,7 +86,7 @@ def do_execute_prompt(query: str, conversation_context: str | None = None) -> di
     else:
         latest_query = raw_query
 
-    print(f"\n\n*************\nNormalized query: '{latest_query}'\n**************\n\n")
+    print(f"\n*************\nNormalized query: '{latest_query}'\n**************\n")
 
     # First try fast Chroma-based FAQ lookup using ONLY the latest user message.
     try:
@@ -172,13 +172,14 @@ def do_execute_prompt(query: str, conversation_context: str | None = None) -> di
 if __name__ == "__main__":
     test_queries = [
         # "Do you offer discounts?",
-        "How can I contact customer support?",
+        "Build me a look for a formal job interview for a sales position"
+        #"How can I contact customer support?",
         # "Do you carry any summer dresses?",
         # "What is your return policy?",
         # "Make a wonderful look for a man attending a wedding party happening during night.",
         # "How do I track my order?",
         # "Do you have a waterproof jacket under $400?",
-        "What's a good look for a woman to wear to a park on an afternoon?",
+        # "What's a good look for a woman to wear to a park on an afternoon?",
         # "Can I cancel my order after placing it?"
         # "Are you hiring?",
         # "Are you open on weekends?",
