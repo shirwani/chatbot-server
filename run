@@ -8,6 +8,7 @@
 #pip install -r requirements.txt
 
 # scp ../clothes.csv root@173.255.238.242:/var/www/flask-apps/.
+# scp root@173.255.238.242:/var/www/flask-apps/clothes.csv .
 
 
 # ON REMOTE SERVER

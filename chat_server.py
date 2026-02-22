@@ -25,7 +25,7 @@ _flask_manage_cors = os.environ.get("FLASK_MANAGE_CORS", "false").strip().lower(
 
 if _flask_manage_cors:
     # Allow any origin. Restrict this if you want tighter security.
-    _allowed_origins = {"http://localhost:8002"}
+    _allowed_origins = {"*"}
 
     # Try to configure flask-cors if it's installed. If not, we'll fall back to
     # the manual @after_request CORS handler below.

@@ -303,7 +303,7 @@ def get_params_for_task(task: str) -> dict:
     # Define the parameter sets for technical and creative tasks
     PARAMETERS_DICT = {
         "TECHNICAL": {'top_p': 0.8, 'temperature': 0.3},
-        "CREATIVE":  {"top_p": 0.1, 'temperature': 1.0}
+        "CREATIVE":  {"top_p": 0.1, 'temperature': 1.2}
     }
 
     # Return the corresponding parameter set based on task type

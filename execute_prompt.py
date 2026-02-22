@@ -91,7 +91,10 @@ def do_execute_prompt(query: str, conversation_context: str | None = None) -> di
     # First try fast Chroma-based FAQ lookup using ONLY the latest user message.
     try:
         response = query_faq_chroma(latest_query)
-        if response and response != "":
+
+        print(f"\n*************\nquery_faq_chroma() response: '{response}'\n**************\n")
+
+        if response and response != "N/A":
             return response
     except Exception:
         # If FAQ lookup itself fails, fall back to the LLM using whatever
@@ -172,8 +175,8 @@ def do_execute_prompt(query: str, conversation_context: str | None = None) -> di
 if __name__ == "__main__":
     test_queries = [
         # "Do you offer discounts?",
-        "Build me a look for a formal job interview for a sales position"
-        #"How can I contact customer support?",
+        # "Build me a look for a formal job interview for a sales position"
+        "What's a good look for a woman to wear to a park on a Sunday afternoon?",
         # "Do you carry any summer dresses?",
         # "What is your return policy?",
         # "Make a wonderful look for a man attending a wedding party happening during night.",

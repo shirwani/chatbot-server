@@ -371,6 +371,7 @@ if __name__ == "__main__":
     # Create the products collection and index the products CSV file if a products_file is provided.
     # If no products_file is provided, we skip this step and the client will start with an empty products collection.
     if products_file:
+        drop_products_collection()
         archive_products_csv_file(products_file)
         create_metadata_files()
         index_products_to_chroma()

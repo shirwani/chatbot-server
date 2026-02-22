@@ -122,10 +122,10 @@ def get_relevant_products_from_query(query: str):
 
     # If no filters, just do a pure semantic search
     if not base_where:
-        return _run_chroma_query(where_clause=None, limit=50)
+        return _run_chroma_query(where_clause=None, limit=20)
 
     # First attempt with full filter set
-    res = _run_chroma_query(where_clause=base_where, limit=50)
+    res = _run_chroma_query(where_clause=base_where, limit=20)
 
     # If the result set is small, gradually relax filters using importance order
     # importance_order = ['baseColor', 'masterCategory', 'usage', 'masterCategory', 'season', 'gender']
@@ -141,13 +141,13 @@ def get_relevant_products_from_query(query: str):
         for i in range(len(importance_order)):
             reduced_filters = _filters_without_low_importance(filters, i)
             where_reduced = _build_chroma_where_from_filters(reduced_filters)
-            res = _run_chroma_query(where_clause=where_reduced, limit=50)
+            res = _run_chroma_query(where_clause=where_reduced, limit=20)
             if len(res) >= 5:
                 return res
 
         # Final fallback: semantic search with no filters if still too few
         if len(res) < 5:
-            res = _run_chroma_query(where_clause=None, limit=50)
+            res = _run_chroma_query(where_clause=None, limit=20)
 
     return res
 
@@ -235,10 +235,10 @@ if __name__ == '__main__':
 
     #t = generate_items_context(results)
     #print("Context for items:\n", t[:1000]) # Print the first 1000 characters of the context for brevity
-
-
-    query = "Build me a look for a job interview for a sales position for a man"
-    #query = "What's a good look for a woman to wear to a park on a Sunday afternoon?"
+    # query = "Show me some men's suits"
+    #query = "Do you have any women's dresses?"
+    #query = "Build me a look for a job interview for a sales position for a man"
+    query = "What's a good look for a woman to wear to a park on a Sunday afternoon?"
 
     result = query_products(query)
     print(result)
