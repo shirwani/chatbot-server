@@ -8,6 +8,7 @@ from llm_utils import (
     generate_with_single_input,
 )
 from utils import dbg_print, read_from_text_file
+from rapidfuzz import fuzz
 
 def _get_collection():
     return get_faq_collection()
@@ -21,11 +22,11 @@ def _normalize_keywords(kw_list: List[str]) -> List[str]:
     return [kw.strip().lower() for kw in kw_list if isinstance(kw, str) and kw.strip()]
 
 
-def _keyword_match(user_query: str, metadatas: List[Dict[str, Any]]) -> List[int]:
+def _keyword_match(user_query: str, metadatas: List[Dict[str, Any]], fuzz_threshold: int = 75) -> List[int]:
     """Return indices of FAQ entries whose keywords list hits the user query.
 
-    Uses simple case-insensitive substring matching between the query and
-    each keyword phrase for robustness (e.g. "weekend hours" hits
+    Uses simple case-insensitive substring matching plus a fuzzy
+    partial-ratio check for robustness (e.g. "weekend hours" hits
     keywords like "open", "weekend", "hours").
     """
     if not user_query:
@@ -41,7 +42,12 @@ def _keyword_match(user_query: str, metadatas: List[Dict[str, Any]]) -> List[int
         if not kws:
             continue
         for kw in _normalize_keywords(kws):
-            if kw and kw in query_norm:
+            if not kw:
+                continue
+            if kw in query_norm:
+                hit_indices.append(idx)
+                break
+            if fuzz.partial_ratio(query_norm, kw) >= fuzz_threshold:
                 hit_indices.append(idx)
                 break
 
@@ -116,12 +122,14 @@ def query_faq_chroma(query: str, top_k: int = 3):
 
     # Keyword pre-filter
     hit_indices = _keyword_match(query, metas)
-    if not hit_indices:
-        return None
 
-    # Build subset for semantic search
-    subset_docs = [docs[i] for i in hit_indices]
-    subset_metas = [metas[i] for i in hit_indices]
+    # Build subset for semantic search; fall back to full set if no keyword hits
+    if hit_indices:
+        subset_docs = [docs[i] for i in hit_indices]
+        subset_metas = [metas[i] for i in hit_indices]
+    else:
+        subset_docs = docs
+        subset_metas = metas
 
     embedder = _get_faq_embedder()
     query_emb = embedder.encode([query], convert_to_numpy=True)

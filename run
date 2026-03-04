@@ -1,14 +1,18 @@
 #python3 -m venv venv
 
-#source venv/bin/activate
-#alias python="venv/bin/python3"
-#alias pip="venv/bin/pip3"
+source venv/bin/activate
+alias python="venv/bin/python3"
+alias pip="venv/bin/pip3"
 
-#pip install --upgrade pip
-#pip install -r requirements.txt
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# ollama pull llama3
 
 # scp ../clothes.csv root@173.255.238.242:/var/www/flask-apps/.
 # scp root@173.255.238.242:/var/www/flask-apps/clothes.csv .
+
+# scp faq.txt root@173.255.238.242:/var/www/flask-apps/chatbot-client-sites/goai.com/faq/faq.txt
 
 
 # ON REMOTE SERVER

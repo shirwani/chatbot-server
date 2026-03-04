@@ -37,6 +37,9 @@ from llm_utils import (
     get_chroma_db_client,
 )
 from utils import read_from_text_file
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -208,8 +211,11 @@ if __name__ == "__main__":
     client_name = kwargs.get("client", None)
 
     if not client_name:
-        print("No client specified. Use client=CLIENT_NAME to specify the client.")
-        sys.exit(1)
+        if os.environ.get("CLIENT_NAME", None):
+            client_name = os.environ.get("CLIENT_NAME").strip()
+        else:
+            print("No client specified. Use client=CLIENT_NAME to specify the client.")
+            sys.exit(1)
 
     set_client_name(client_name)
     drop_faq_collection()

@@ -80,7 +80,7 @@ def home():
     # For GET requests from the widget, the question usually comes in as a
     # query parameter. For POST, it could be JSON or form-encoded; handle both.
     if request.method == "GET":
-        client_site = (request.args.get("client_site", "") or "").strip().lower()
+        client_site = (request.args.get("client_site", "goai.com") or "goai.com").strip().lower()
         prompt = request.args.get("prompt", "How can I contact customer service?")
         conversation_context = request.args.get("conversation_context", "") or None
     else:
