@@ -163,9 +163,15 @@ def query_faq_chroma(query: str, top_k: int = 3):
     if not matches:
         return None
 
+    # Filter out low-confidence matches
+    matches = [m for m in matches if m["score"] > 0.45]
+
+    if not matches:
+        return None
+
     synthesized = _synthesize_answer(query, matches)
 
-    print(f"    - query_faq_chroma() -> matches: {matches}, synthesized answer: {synthesized}")
+    print(f"    query_faq_chroma() -> matches: {matches}, synthesized answer: {synthesized}")
     return synthesized
 
 

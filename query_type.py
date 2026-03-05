@@ -24,7 +24,7 @@ def get_query_type(query: str) -> str:
     prompt = prompt.format(query=query)
     kwargs = generate_params_dict(prompt=prompt, temperature=0.3)
     response = generate_with_single_input(**kwargs)
-    print(f"    - get_query_type() -> response: {response}")
+    print(f"    get_query_type() -> response: {response}")
     return response
 
 

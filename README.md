@@ -146,7 +146,121 @@ You can call the endpoint in two ways:
 
 ---
 
-## 4. Query processing pipeline
+## 4. Control Flow Diagram
+
+```mermaid
+flowchart TD
+    Client([Client / Browser]) -->|GET or POST /| A
+
+    subgraph chat_server.py
+        A[Receive HTTP Request] --> B[Extract prompt, client_site,\nconversation_context, session_id]
+        B --> C{Session ID\nprovided?}
+        C -->|Yes| D[SessionManager.get_session\nload stored context]
+        C -->|No| E[Use context from request]
+        D --> F[set_client_name\nclient_site]
+        E --> F
+        F --> G[do_execute_prompt\nprompt, conversation_context]
+        G --> Z[Return JSON\nanswer]
+        Z --> Client
+    end
+
+    subgraph execute_prompt.py
+        G --> H[Trim conversation_context\nto last 6 turns]
+        H --> I{Raw query\nempty?}
+        I -->|Yes| I1[Return None]
+        I -->|No| J{SpellCorrector\navailable?}
+        J -->|Yes| K[SpellCorrector.fix_string\ncorrect spelling]
+        J -->|No| L[Use raw query as-is]
+        K --> M[latest_query]
+        L --> M
+
+        M --> N[query_faq_chroma\nlatest_query]
+
+        subgraph query_faq_chroma.py
+            N --> N1[collection.get\nfetch all FAQs]
+            N1 --> N2[_keyword_match\nfuzzy keyword pre-filter]
+            N2 --> N3{Keyword\nhits?}
+            N3 -->|Yes| N4[Subset matching docs]
+            N3 -->|No| N5[Full doc set]
+            N4 --> N6[Encode subset with\nFAQ SentenceTransformer]
+            N5 --> N6
+            N6 --> N7[Cosine similarity\nrank top-k]
+            N7 --> N8[_synthesize_answer\nLLM call with FAQ context]
+            N8 --> N9[Return synthesized\nFAQ answer]
+        end
+
+        N9 --> O{FAQ answer\nnon-empty?}
+        O -->|Yes| Z
+        O -->|No / Exception| P[get_query_type\nclassify query]
+
+        subgraph query_type.py
+            P --> P1[Load get_query_type.txt\nprompt template]
+            P1 --> P2[LLM call\ntemp=0.3]
+            P2 --> P3[Return label:\nPRODUCT or OTHER]
+        end
+
+        P3 --> Q{Label ==\nPRODUCT?}
+
+        Q -->|Yes| R[query_products\nlatest_query]
+
+        subgraph query_products.py
+            R --> R1[technical_or_creative\nclassify query style]
+            R1 --> R2[get_params_for_task\ntemperature, top_p, etc.]
+            R2 --> R3[get_relevant_products_from_query]
+
+            subgraph get_relevant_products_from_query
+                R3 --> R3a[generate_serializeable_metadata_filters_from_query]
+
+                subgraph metadata_filters.py
+                    R3a --> R3b[LLM → JSON metadata filters]
+                    R3b --> R3c[Convert to Chroma where clause]
+                end
+
+                R3c --> R3d[ChromaDB vector search\nwith filters]
+                R3d --> R3e{Enough\nresults?}
+                R3e -->|No| R3f[Relax filters\nby importance order]
+                R3f --> R3d
+                R3e -->|Yes| R3g[Return product list]
+            end
+
+            R3g --> R4[generate_items_context\nformat product details]
+            R4 --> R5[Load query_products.txt\nprompt template]
+            R5 --> R6[LLM call\ngenerate product answer]
+            R6 --> R7[Return product answer]
+        end
+
+        Q -->|No| S[Load fall_through_query_type.txt\nprompt template]
+        S --> T[Inject conversation_context\nif present]
+        T --> U[LLM call\ntemp=0.5]
+        U --> V[Return fallback answer]
+
+        R7 --> Z
+        V --> Z
+    end
+
+    subgraph llm_utils.py
+        N8 -.->|generate_with_single_input| LLM[(LLM Backend)]
+        P2 -.->|generate_with_single_input| LLM
+        R6 -.->|generate_with_single_input| LLM
+        U  -.->|generate_with_single_input| LLM
+        R3b -.->|generate_with_single_input| LLM
+        R1 -.->|generate_with_single_input| LLM
+    end
+
+    subgraph LLM Backends
+        LLM -->|DEFAULT_LLM=llama3| Ollama[call_ollama.py\nLocal Ollama]
+        LLM -->|DEFAULT_LLM=deepseek| DeepSeek[call_deepseek.py\nDeepSeek API]
+    end
+
+    subgraph Session Management
+        D -.-> SM[(SessionManager\nin-memory store)]
+        Z -.->|append_turn| SM
+    end
+```
+
+---
+
+## 5. Query processing pipeline
 
 Here is what happens when `chat_server.py` receives a prompt:
 
