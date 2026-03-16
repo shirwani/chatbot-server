@@ -3,7 +3,7 @@ from call_ollama import ask_local_ollama_llama3
 from call_deepseek import ask_deepseek_r1
 import chromadb
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 load_dotenv()
 os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
@@ -19,6 +19,7 @@ _FAQ_EMBEDDER = None
 
 _PRODUCTS_COLLECTION = None
 _PRODUCTS_EMBEDDER = None
+_CROSS_ENCODER_RERANKER = None
 
 _CLIENT_PRODUCTS_CSV_FILE = None
 
@@ -36,13 +37,22 @@ def set_client_name(client_name: str = None):
     if not client_name:
         client_name = os.getenv("CLIENT_NAME", _DEFAULT_CLIENT_NAME)
 
-    _CLIENT_NAME = client_name.strip()
+    client_name = client_name.strip()
 
-    # We're changing client name, so we need to reset all the client-specific state to avoid accidentally using the wrong client's data.
-    set_chroma_db_client()
-    set_faq_collection()
+    # Models are client-independent — load them once and reuse across all clients.
     set_faq_embedder()
     set_products_embedder()
+    set_cross_encoder_reranker()
+
+    # Only re-initialize client-specific state (ChromaDB) when the client actually changes.
+    if client_name == _CLIENT_NAME:
+        print(f"[DEBUG] Client name unchanged ('{client_name}'), skipping ChromaDB re-init")
+        return
+
+    _CLIENT_NAME = client_name
+
+    set_chroma_db_client()
+    set_faq_collection()
     set_products_collection()
 
     print(f"Client name set to: {_CLIENT_NAME}")
@@ -100,6 +110,9 @@ def get_faq_collection():
 @dbg_print
 def set_faq_embedder():
     global _FAQ_EMBEDDER
+    if _FAQ_EMBEDDER is not None:
+        print("[DEBUG] Reusing cached faq_embedder")
+        return
     _FAQ_EMBEDDER = SentenceTransformer(get_faq_embedder_model_name())
 
 
@@ -131,12 +144,33 @@ def get_products_collection():
 @dbg_print
 def set_products_embedder():
     global _PRODUCTS_EMBEDDER
+    if _PRODUCTS_EMBEDDER is not None:
+        print("[DEBUG] Reusing cached products_embedder")
+        return
     _PRODUCTS_EMBEDDER = SentenceTransformer(get_products_embedder_model_name())
 
 
 def get_products_embedder():
     global _PRODUCTS_EMBEDDER
     return _PRODUCTS_EMBEDDER
+
+
+def get_cross_encoder_model_name():
+    return "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+
+@dbg_print
+def set_cross_encoder_reranker():
+    global _CROSS_ENCODER_RERANKER
+    if _CROSS_ENCODER_RERANKER is not None:
+        print("[DEBUG] Reusing cached cross_encoder_reranker")
+        return
+    _CROSS_ENCODER_RERANKER = CrossEncoder(get_cross_encoder_model_name())
+
+
+def get_cross_encoder_reranker():
+    global _CROSS_ENCODER_RERANKER
+    return _CROSS_ENCODER_RERANKER
 
 
 def get_client_faq_path():
@@ -197,6 +231,7 @@ def get_default_llm():
 # ---------------------------------------------------------------------------
 # LLM dispatch & parameter helpers
 # ---------------------------------------------------------------------------
+@dbg_print
 def ask_llm(payload: dict = None):
     """Dispatch to the appropriate backend based on model name and return the LLM response.
 
@@ -224,6 +259,7 @@ def ask_llm(payload: dict = None):
         raise ValueError(f"Unsupported model specified: {model}")
 
 
+@dbg_print
 def generate_params_dict(
         prompt: str,
         temperature: float = None,
@@ -255,6 +291,7 @@ def generate_params_dict(
     return kwargs
 
 
+@dbg_print
 def generate_with_single_input(
         prompt: str,
         role: str = 'user',
@@ -285,6 +322,7 @@ def generate_with_single_input(
     return response
 
 
+@dbg_print
 def get_params_for_task(task: str) -> dict:
     """
     Retrieves specific LLM parameters based on the nature of the task.
@@ -318,6 +356,7 @@ def get_params_for_task(task: str) -> dict:
     return param_dict
 
 
+@dbg_print
 def parse_json_output(llm_output: str) -> dict:
     """
     Parses a string output from an LLM into a JSON object.
@@ -347,6 +386,7 @@ def parse_json_output(llm_output: str) -> dict:
         return {}
 
 
+@dbg_print
 def search_products(query: str, n_results: int = 5):
     """Search the product products in the ChromaDB `products` collection.
 

@@ -140,9 +140,28 @@ def copy_files_from_directory(source_dir, dest_dir):
 
 
 
+import threading
+import time
+
+_dbg_depth = threading.local()
+
+
+def _get_call_stack() -> list[str]:
+    """Return the thread-local decorated-call stack, initialising it if needed."""
+    stack = getattr(_dbg_depth, "stack", None)
+    if stack is None:
+        stack = []
+        _dbg_depth.stack = stack
+    return stack
+
+
 def dbg_print(func):
     """
     A decorator that prints the name of the function being called for debugging purposes.
+    Nested calls are indented by 4 spaces per level so the call hierarchy is visible.
+    Both the Entering and Leaving messages include the full call stack of decorated
+    functions (e.g. ``do_execute_prompt > query_products > ask_llm``).
+    The Leaving message also includes the elapsed wall-clock time in seconds.
 
     Args:
         func:
@@ -158,9 +177,19 @@ def dbg_print(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print(f"[DEBUG] Entering: {func.__name__}")
-        result = func(*args, **kwargs)
-        print(f"[DEBUG] Leaving: {func.__name__}")
+        stack = _get_call_stack()
+        depth = len(stack)
+        indent = "    " * depth
+        stack.append(func.__name__)
+        call_chain = " -> ".join(stack)
+        print(f"{indent}[DEBUG] Entering: {call_chain}")
+        start = time.time()
+        try:
+            result = func(*args, **kwargs)
+        finally:
+            elapsed = time.time() - start
+            stack.pop()
+        print(f"{indent}[DEBUG] Leaving:  {call_chain} ({elapsed:.3f}s)")
         return result
 
     return wrapper

@@ -10,18 +10,22 @@ from llm_utils import (
 from utils import dbg_print, read_from_text_file
 from rapidfuzz import fuzz
 
+@dbg_print
 def _get_collection():
     return get_faq_collection()
 
 
+@dbg_print
 def _get_faq_embedder():
     return get_faq_embedder()
 
 
+@dbg_print
 def _normalize_keywords(kw_list: List[str]) -> List[str]:
     return [kw.strip().lower() for kw in kw_list if isinstance(kw, str) and kw.strip()]
 
 
+@dbg_print
 def _keyword_match(user_query: str, metadatas: List[Dict[str, Any]], fuzz_threshold: int = 75) -> List[int]:
     """Return indices of FAQ entries whose keywords list hits the user query.
 
@@ -54,6 +58,7 @@ def _keyword_match(user_query: str, metadatas: List[Dict[str, Any]], fuzz_thresh
     return hit_indices
 
 
+@dbg_print
 def _synthesize_answer(query: str, matches: List[Dict[str, Any]]) -> str:
     """Use the LLM to synthesize a final answer from FAQ matches and the query."""
     # Build a simple context block of Q/A pairs
@@ -167,7 +172,8 @@ def query_faq_chroma(query: str, top_k: int = 3):
     matches = [m for m in matches if m["score"] > 0.45]
 
     if not matches:
-        return None
+        pass
+        #return None
 
     synthesized = _synthesize_answer(query, matches)
 

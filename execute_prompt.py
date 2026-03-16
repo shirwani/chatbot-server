@@ -22,6 +22,7 @@ except Exception:
     _SPELL_CORRECTOR = None
 
 
+@dbg_print
 def _trim_conversation_context(conversation_context: str | None, max_pairs: int = 6) -> str | None:
     """Return a shortened conversation transcript limited to the last N user/assistant turns.
 
@@ -176,8 +177,8 @@ if __name__ == "__main__":
     test_queries = [
         # "Do you offer discounts?",
         # "Build me a look for a formal job interview for a sales position"
-        "What's a good look for a woman to wear to a park on a Sunday afternoon?",
-        # "Do you carry any summer dresses?",
+        # "What's a good look for a woman to wear to a park on a Sunday afternoon?",
+        "Do you carry any summer dresses?",
         # "What is your return policy?",
         # "Make a wonderful look for a man attending a wedding party happening during night.",
         # "How do I track my order?",
@@ -186,6 +187,7 @@ if __name__ == "__main__":
         # "Can I cancel my order after placing it?"
         # "Are you hiring?",
         # "Are you open on weekends?",
+        # "Tell me a joke"
     ]
     for query in test_queries:
         response = do_execute_prompt(query)

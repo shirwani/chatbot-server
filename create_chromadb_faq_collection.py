@@ -38,7 +38,6 @@ from llm_utils import (
 )
 from utils import read_from_text_file
 from dotenv import load_dotenv
-
 load_dotenv()
 
 # ---------------------------------------------------------------------------

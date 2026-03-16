@@ -25,7 +25,7 @@ def technical_or_creative(query: str) -> str:
     prompt = prompt.format(query=query)
     kwargs = generate_params_dict(prompt=prompt, temperature=0, max_tokens=2048)
     response = generate_with_single_input(**kwargs)
-    print(f"    - technical_or_creative() -> response: {response}")
+    print(f"    technical_or_creative() -> response: {response}")
     return response
 
 

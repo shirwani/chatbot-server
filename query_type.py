@@ -30,14 +30,13 @@ def get_query_type(query: str) -> str:
 
 if __name__ == "__main__":
     test_queries = [
-        "How do I track my order",
-        "What is your return policy?",
         "Do you have this shirt in blue?",
-        "How do I track my order?",
-        "Is this jacket waterproof?",
-        "Can I cancel my order after placing it?",
         "What sizes are available for these pants?",
         "Make a wonderful look for a man attending a wedding party happening during night.",
+        "How do I track my order",
+        "What is your return policy?",
+        "Is this jacket waterproof?",
+        "Can I cancel my order after placing it?",
     ]
     for query in test_queries:
         result = get_query_type(query)

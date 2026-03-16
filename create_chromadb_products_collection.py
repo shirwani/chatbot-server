@@ -34,6 +34,8 @@ from llm_utils import (
     get_client_name,
 )
 
+from dotenv import load_dotenv
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -68,12 +70,12 @@ def _load_metadata_fields(path: str) -> List[str]:
     return fields
 
 
-def _load_rows(path: str) -> List[Dict[str, str]]:
+def _load_rows(path: str) -> tuple[List[str], List[Dict[str, str]]]:
     """Load all rows from the products CSV as a list of dicts.
 
-    Assumes the header row contains at least the following columns:
-    id, gender, masterCategory, subCategory, articleType, baseColor, season,
-    year, usage, productDisplayName
+    Returns:
+        A tuple of (columns, rows) where *columns* preserves the original
+        header order from the CSV file and *rows* is a list of cleaned dicts.
 
     The function is defensive against malformed rows where `csv.DictReader`
     may yield `None` keys or values due to extra/too-few columns.
@@ -83,8 +85,11 @@ def _load_rows(path: str) -> List[Dict[str, str]]:
         raise FileNotFoundError(f"CSV file not found at {path}")
 
     rows: List[Dict[str, str]] = []
+    columns: List[str] = []
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        # Capture the original header order from the CSV file
+        columns = [c.strip() for c in (reader.fieldnames or []) if c and c.strip()]
         for row in reader:
             if row is None:
                 continue
@@ -101,42 +106,33 @@ def _load_rows(path: str) -> List[Dict[str, str]]:
             if cleaned:
                 rows.append(cleaned)
 
-    return rows
+    return columns, rows
 
 
-def _build_text_for_row(row: Dict[str, str]) -> str:
+def _build_text_for_row(row: Dict[str, str], columns: List[str]) -> str:
     """Build a natural-language description from a products row for embedding.
 
-    This version avoids hard-coding specific column names. It uses
-    `productDisplayName` as the primary title if present, and then
-    appends the remaining non-empty fields in a stable order.
+    Concatenates **all** columns (read from the CSV header) in their original
+    order, producing a "keyword + semantic" string that captures every
+    relevant feature of the product.
+
+    Example output (given columns Product_Name, Category, Features, Description):
+        "Product_Name: Alpine Trekker. Category: Footwear. Features: Waterproof,
+         GORE-TEX, Vibram Sole. Description: Professional grade hiking boots …"
+
+    The ``id`` column is excluded from the description text because it carries
+    no semantic value; it is already stored as the ChromaDB document ID.
     """
-    # Prefer a display name/title if present
-    name = (row.get("productDisplayName") or "").strip()
-
-    parts = []
-    if name:
-        parts.append(name)
-
-    # Sort keys for deterministic output, but treat id and
-    # productDisplayName specially so they don't clutter the middle.
-    descriptor_bits = []
-    for key in sorted(row.keys()):
-        if key in {"productDisplayName", "id"}:
+    parts: List[str] = []
+    for col in columns:
+        if col == "id":
             continue
-        value = (row.get(key) or "").strip()
+        value = (row.get(col) or "").strip()
         if not value:
             continue
-        descriptor_bits.append(f"{key}: {value}")
+        parts.append(f"{col}: {value}")
 
-    if descriptor_bits:
-        parts.append("; ".join(descriptor_bits))
-
-    pid = (row.get("id") or "").strip()
-    if pid:
-        parts.append(f"(ID: {pid})")
-
-    return " | ".join(filter(None, parts))
+    return ". ".join(parts)
 
 
 def _ensure_collection():
@@ -164,13 +160,19 @@ def _get_existing_ids(collection) -> set:
 # Main indexing logic
 # ---------------------------------------------------------------------------
 
-def index_products_to_chroma(batch_size: int = 512) -> None:
+def index_products_to_chroma(batch_size: int = 500) -> None:
     """Index all products rows into the Chroma `products` collection.
 
+    Each CSV row is treated as one document (the "one item, one document"
+    rule).  The document text is a concatenation of all relevant column
+    values so the embedding captures both keywords and semantics.
+
     Args:
-        batch_size: Number of rows to embed and add per batch.
+        batch_size: Number of rows to embed and add per batch (default 500
+                    to avoid memory overhead or API timeouts on large
+                    catalogues).
     """
-    rows = _load_rows(get_client_products_csv_file())
+    columns, rows = _load_rows(get_client_products_csv_file())
     if not rows:
         print("No rows found in products.csv; nothing to index.")
         return
@@ -221,7 +223,7 @@ def index_products_to_chroma(batch_size: int = 512) -> None:
 
     for row in to_index:
         pid = str(row.get("id", "")).strip()
-        text = _build_text_for_row(row)
+        text = _build_text_for_row(row, columns)
 
         # Document text and metadata for downstream retrieval/filters
         docs_batch.append(text)
@@ -355,12 +357,15 @@ if __name__ == "__main__":
 
     # Example: access them like normal kwargs
     client_name = kwargs.get("client", None)
-    products_file = kwargs.get("products", None)
-
     if not client_name:
-        print("No client specified. Use client=CLIENT_NAME to specify the client.")
-        sys.exit(1)
+        if os.environ.get("CLIENT_NAME", None):
+            client_name = os.environ.get("CLIENT_NAME").strip()
+        else:
+            print("No client specified. Use client=CLIENT_NAME to specify the client.")
+            sys.exit(1)
 
+
+    products_file = kwargs.get("products", None)
     if not products_file:
         print("No client specified. Use products=PRODUCTS_CSV_FILE to specify products list.")
         sys.exit(1)
